@@ -434,7 +434,7 @@ pytest tests/test_email.py
 
 ## 📄 License
 
-MIT License - Open source and free to use
+Open source and free to use
 
 ---
 
@@ -442,7 +442,7 @@ MIT License - Open source and free to use
 
 Developed as part of a quantum communication security research project.
 
-**Contact**: support@qumail.in
+**Contact**: srisaimanas06@gmail.com
 
 ---
 
