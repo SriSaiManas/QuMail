@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuMail - Quantum Secure Email</title>
+    <style>
+        /* Change: Updated color scheme to the purple "Quantum" theme */
+        :root {
+            --dark-bg: #0b0b0b; 
+            --primary-bg: #111111; 
+            --secondary-bg: #1a1a1a;
+            --border-color: #50207A; 
+            --text-primary: #D6B9FC; 
+            --text-secondary: #a790c8;
+            --accent-color: #838CE5; 
+            --accent-shadow: rgba(131, 140, 229, 0.4);
+            --error-text: #f44336; 
+            --success-text: #4CAF50;
+        }
+        
+        /* Change: Added floating quantum symbols style */
+        .quantum-symbol-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none; overflow: hidden;
+        }
+        .quantum-symbol {
+            position: absolute; font-size: 14px;
+            color: rgba(214, 185, 252, 0.5);
+            user-select: none; animation: drift 20s linear infinite;
+        }
+        @keyframes drift {
+            0% {transform: translate(0,0) rotate(0deg);}
+            50% {transform: translate(50px, -50px) rotate(180deg);}
+            100% {transform: translate(-50px,50px) rotate(360deg);}
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Cascadia Code', Consolas, 'Courier New', monospace; background: var(--dark-bg); min-height: 100vh; color: var(--text-primary); }
+        .neon-text { color: var(--accent-color); text-shadow: 0 0 5px var(--accent-shadow), 0 0 10px var(--accent-shadow); }
+        
+        /* Change: Adjusted login container to move it higher */
+        .login-container { display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; padding: 15vh 20px 20px; }
+        
+        .login-card { background: var(--primary-bg); padding: 40px; border-radius: 8px; box-shadow: 0 0 30px rgba(0, 0, 0, 0.7); border: 1px solid var(--border-color); max-width: 450px; width: 100%; position: relative; }
+        .status-indicator { position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-secondary); }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; animation: glow 1.5s infinite alternate; }
+        .status-connected { background: var(--accent-color); box-shadow: 0 0 8px var(--accent-shadow); }
+        @keyframes glow { from { box-shadow: 0 0 4px currentColor; } to { box-shadow: 0 0 12px currentColor, 0 0 16px currentColor; } }
+        .logo-section { text-align: center; margin-bottom: 30px; }
+        .quantum-logo { width: 60px; height: 60px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; color: var(--dark-bg); margin: 0 auto 15px; text-shadow: none; }
+        .app-title { font-size: 32px; font-weight: 700; color: var(--accent-color); text-shadow: 0 0 8px var(--accent-shadow); margin-bottom: 5px; }
+        .app-subtitle { color: var(--text-secondary); font-size: 14px; height: 1.2em; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: var(--text-secondary); }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid var(--border-color); background: var(--secondary-bg); border-radius: 4px; font-size: 16px; color: var(--text-primary); transition: all 0.3s ease; font-family: inherit; }
+        .form-group input:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px var(--accent-shadow); }
+        .login-btn { width: 100%; padding: 15px; background: var(--accent-color); color: var(--dark-bg); border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s ease; font-family: inherit; }
+        .login-btn:hover { box-shadow: 0 0 15px var(--accent-shadow); }
+        .error-message { background: rgba(244, 67, 54, 0.1); color: var(--error-text); padding: 12px; border-radius: 4px; margin-top: 15px; border-left: 4px solid var(--error-text); }
+        .app-container { display: none; height: 100vh; overflow: hidden; }
+        .app-header { background: var(--primary-bg); padding: 15px 25px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .app-logo-group, .user-info-group { display: flex; align-items: center; gap: 15px; }
+        .mini-logo { width: 35px; height: 35px; background: var(--accent-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--dark-bg); font-size: 16px; }
+        .user-avatar { width: 35px; height: 35px; background: var(--accent-color); color: var(--dark-bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        .logout-btn { padding: 8px 16px; background: var(--secondary-bg); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; font-size: 14px; font-family: inherit; }
+        .main-layout { display: flex; height: calc(100vh - 71px); }
+        .sidebar { width: 280px; background: var(--primary-bg); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .sidebar-menu { flex: 1; padding: 20px; }
+        .menu-item { display: flex; align-items: center; gap: 12px; padding: 15px; margin-bottom: 8px; border-radius: 4px; cursor: pointer; transition: all 0.3s ease; }
+        .menu-item:hover { background: var(--secondary-bg); }
+        .menu-item.active { background: var(--accent-color); color: var(--dark-bg); }
+        .menu-item.disabled { color: #555; cursor: not-allowed; }
+        .compose-section { padding: 20px; border-top: 1px solid var(--border-color); }
+        .compose-btn { width: 100%; padding: 15px; background: var(--accent-color); color: var(--dark-bg); border: none; border-radius: 4px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; font-family: inherit; }
+        .content-area { flex: 1; background: var(--dark-bg); overflow-y: auto; }
+        .email-list { padding: 20px; }
+        .email-item { position: relative; padding: 20px 20px 20px 35px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.3s ease; }
+        .unread-indicator { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 8px; height: 8px; background-color: var(--accent-color); border-radius: 50%; box-shadow: 0 0 8px var(--accent-shadow); }
+        .email-item:hover { background: var(--primary-bg); }
+        .delete-mail-btn { display: none; position: absolute; top: 15px; right: 15px; width: 28px; height: 28px; border: none; background: var(--secondary-bg); color: var(--error-text); border-radius: 50%; cursor: pointer; font-size: 18px; line-height: 28px; text-align: center; }
+        .email-item:hover .delete-mail-btn { display: block; }
+        .email-header, .email-details { display: flex; justify-content: space-between; align-items: center; }
+        .email-header { margin-bottom: 8px; }
+        .sender-info { font-weight: 600; } .email-time { color: var(--text-secondary); font-size: 12px; }
+        .email-subject { color: var(--text-primary); margin-bottom: 5px; } .email-preview { color: var(--text-secondary); font-size: 14px; }
+        .security-badge { padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-left: 10px; border: 1px solid currentColor; background: rgba(255, 255, 255, 0.05); }
+        .level-1 { color: #f44336; } .level-2 { color: #ff9800; } .level-3 { color: #2196F3; } .level-4 { color: #4CAF50; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; backdrop-filter: blur(5px); }
+        .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--primary-bg); border: 1px solid var(--border-color); padding: 0; border-radius: 8px; max-width: 800px; width: 90%; max-height: 90vh; overflow: hidden; box-shadow: 0 0 40px rgba(0, 0, 0, 0.6); }
+        .modal-header { padding: 25px; background: var(--accent-color); color: var(--dark-bg); display: flex; justify-content: space-between; align-items: center; }
+        .close-modal { background: none; border: none; color: var(--dark-bg); font-size: 24px; cursor: pointer; padding: 5px; }
+        .modal-body { padding: 25px; max-height: calc(90vh - 78px); overflow-y: auto; }
+        .compose-form { display: flex; flex-direction: column; gap: 20px; }
+        .recipient-group { display: flex; align-items: center; gap: 15px; }
+        .recipient-input { flex: 1; padding: 12px; border: 1px solid var(--border-color); background: var(--secondary-bg); color: var(--text-primary); border-radius: 4px; font-size: 14px; font-family: inherit; }
+        .recipient-status { font-weight: 600; transition: color 0.3s ease; }
+        .status-verified { color: var(--success-text); } .status-unverified { color: var(--error-text); }
+        .security-selection { border: 1px solid var(--border-color); border-radius: 4px; padding: 20px; }
+        .security-title { color: var(--accent-color); margin-bottom: 15px; }
+        .security-options { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .security-option { padding: 15px; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer; text-align: center; transition: all 0.3s ease; }
+        .security-option:hover, .security-option.selected { border-color: var(--accent-color); background: var(--secondary-bg); }
+        .security-option-title { font-weight: 600; } .security-option-desc { font-size: 12px; margin-top: 5px; color: var(--text-secondary); }
+        .compose-field { display: flex; flex-direction: column; gap: 8px; }
+        .compose-field label { font-weight: 500; color: var(--text-secondary); }
+        .compose-field input, .compose-field textarea { padding: 12px; border: 1px solid var(--border-color); background: var(--secondary-bg); color: var(--text-primary); border-radius: 4px; font-family: inherit; transition: all 0.3s ease; }
+        .compose-field textarea.otp-warning { border-color: var(--error-text); box-shadow: 0 0 8px var(--error-text); }
+        .compose-field textarea { min-height: 120px; resize: vertical; }
+        .attachment-area { border: 2px dashed var(--border-color); border-radius: 4px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s ease; }
+        .attachment-area:hover { border-color: var(--accent-color); background: var(--secondary-bg); }
+        .attachment-list { margin-top: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .attachment-item { display: flex; justify-content: space-between; align-items: center; background: var(--secondary-bg); padding: 8px 12px; border-radius: 4px; font-size: 14px; }
+        .attachment-info { color: var(--text-secondary); }
+        .remove-attachment-btn { background: none; border: none; color: var(--error-text); cursor: pointer; font-size: 18px; }
+        .attachment-summary { font-size: 12px; color: var(--text-secondary); text-align: right; margin-top: 10px; }
+        .compose-actions { display: flex; gap: 15px; margin-top: 20px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.3s ease; font-family: inherit; }
+        .btn-primary { background: var(--accent-color); color: var(--dark-bg); flex: 1; }
+        .btn-primary:hover { box-shadow: 0 0 15px var(--accent-shadow); }
+        .btn-secondary { background: var(--secondary-bg); color: var(--text-primary); }
+        .progress-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .progress-card { background: var(--primary-bg); padding: 40px; border-radius: 8px; text-align: center; min-width: 450px; border: 1px solid var(--border-color); }
+        .progress-text { margin: 20px 0; color: var(--text-secondary); }
+        .progress-bar { width: 100%; height: 6px; background: var(--secondary-bg); border-radius: 3px; overflow: hidden; margin: 20px 0; }
+        .progress-fill { height: 100%; background: var(--accent-color); transition: width 0.5s ease; width: 0%; }
+        .encrypted-content-viewer code { display: block; background: var(--dark-bg); padding: 15px; border-radius: 6px; word-break: break-all; max-height: 150px; overflow-y: auto; color: var(--text-secondary); }
+        .decrypt-prompt { margin-top: 20px; padding: 20px; background: rgba(131, 140, 229, 0.05); border: 1px solid var(--accent-color); border-radius: 4px; display: flex; flex-direction: column; gap: 15px; }
+        .decrypt-prompt input { padding: 12px; border: 1px solid var(--border-color); background: var(--secondary-bg); color: var(--text-primary); border-radius: 4px; font-family: inherit; }
+        .decrypt-prompt .btn { background: var(--accent-color); color: var(--dark-bg); }
+        .integrity-check { font-size: 12px; color: var(--text-secondary); }
+        .integrity-ok { color: var(--success-text); }
+        .key-destroyed-notice { font-size: 12px; color: var(--error-text); }
+    </style>
+</head>
+<body>
+    <div id="quantumSymbolBg" class="quantum-symbol-bg"></div>
+
+    <div id="loginPage" class="login-container">
+        <div class="login-card">
+            <div class="status-indicator"><div class="status-dot" id="connectionStatus"></div><span id="connectionText"></span></div>
+            <div class="logo-section"><div class="quantum-logo">⚛</div><h1 class="app-title">QuMail</h1><p class="app-subtitle" id="appSubtitle"></p></div>
+            <form id="loginForm" autocomplete="off">
+                <div class="form-group"><label for="email">User ID</label><input type="email" id="email" required></div>
+                <div class="form-group"><label for="password">Password</label><input type="password" id="password" required></div>
+                <button type="submit" class="login-btn">> Establish Connection</button>
+            </form>
+            <div id="loginError" class="error-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div id="appContainer" class="app-container">
+        <header class="app-header">
+            <div class="app-logo-group"><div class="mini-logo">⚛</div><h2 class="neon-text">QuMail</h2></div>
+            <div class="user-info-group"><div class="user-avatar" id="userAvatar"></div><span id="userName"></span><button class="logout-btn" onclick="logout()">Logout</button></div>
+        </header>
+        <main class="main-layout">
+            <aside class="sidebar">
+                <nav class="sidebar-menu">
+                    <div class="menu-item active" data-section="inbox"><span>📥</span><span>Inbox</span><span id="inboxCount" class="neon-text" style="margin-left:auto;">0</span></div>
+                    <div class="menu-item" data-section="outbox"><span>📤</span><span>Sent</span><span id="outboxCount" style="margin-left:auto;">0</span></div>
+                    <div class="menu-item disabled" id="settingsBtn"><span>⚙️</span><span>Settings</span></div>
+                </nav>
+                <div class="compose-section"><button class="compose-btn" onclick="openCompose()"><span>✏️</span><span>Compose</span></button></div>
+            </aside>
+            <section class="content-area"><div id="emailList" class="email-list"></div></section>
+        </main>
+    </div>
+    
+    <div id="composeModal" class="modal">
+        <div class="modal-content">
+            <header class="modal-header"><h3 class="modal-title">Compose Secure Transmission</h3><button class="close-modal" onclick="closeCompose()">&times;</button></header>
+            <div class="modal-body">
+                <form class="compose-form" id="composeForm">
+                    <input type="file" id="fileAttachmentInput" multiple hidden>
+                    <div class="recipient-group"><input type="email" id="recipientEmail" class="recipient-input" placeholder="To: agent@qumail.in" required><div id="recipientStatus" class="recipient-status"></div></div>
+                    <div class="security-selection">
+                        <div class="security-title">Select Security Protocol</div>
+                        <div class="security-options" id="securityOptions">
+                            <div class="security-option" data-level="1"><div class="security-option-title">Level 1</div><div class="security-option-desc">Unbreakable OTP</div></div>
+                            <div class="security-option" data-level="2"><div class="security-option-title">Level 2</div><div class="security-option-desc">QKD + AES</div></div>
+                            <div class="security-option" data-level="3"><div class="security-option-title">Level 3</div><div class="security-option-desc">Post-Quantum</div></div>
+                            <div class="security-option" data-level="4"><div class="security-option-title">Level 4</div><div class="security-option-desc">Standard</div></div>
+                        </div>
+                    </div>
+                    <div class="compose-field"><label>Subject</label><input type="text" id="emailSubject" required></div>
+                    <div class="compose-field"><label>Message</label><textarea id="emailContent" required></textarea></div>
+                    <div>
+                        <div class="attachment-area" id="attachmentArea">📎 Click to Attach Secure Files</div>
+                        <div class="attachment-list" id="attachmentList"></div>
+                    </div>
+                    <div class="compose-actions"><button type="submit" class="btn btn-primary">Transmit (Ctrl+Enter)</button><button type="button" class="btn btn-secondary" onclick="closeCompose()">Abort</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="viewEmailModal" class="modal">
+        <div class="modal-content">
+            <header class="modal-header"><h3 class="modal-title">Encrypted Transmission</h3><button class="close-modal" onclick="closeViewEmail()">&times;</button></header>
+            <div class="modal-body"><div id="emailViewer"></div></div>
+        </div>
+    </div>
+
+    <script>
+        // --- DATABASE AND STATE ---
+        const database = { users: { 'alice@qumail.in': { password: '1234567890', privateKey: '1234567890', name: 'Agent Alice', avatar: 'A' }, 'bob@qumail.in': { password: '0987654321', privateKey: '0987654321', name: 'Agent Bob', avatar: 'B' } }, emails: [] };
+        const appState = { currentUser: null, currentSection: 'inbox', selectedSecurityLevel: 2, currentAttachments: [] };
+        const securityLevels = { 1: { name: 'Quantum OTP', desc: 'Unbreakable One-Time Pad. Key is consumed on use.' }, 2: { name: 'Quantum AES', desc: 'Quantum Key Distribution with AES-256.' }, 3: { name: 'Post-Quantum', desc: 'Lattice-Based PQC. Resistant to future quantum attacks.' }, 4: { name: 'Standard', desc: 'Standard TLS protocol (Unencrypted).' } };
+        const progressSteps = { encrypt: { 1: ["Connecting to Key Manager...", "Requesting Quantum OTP...", "Encrypting with One-Time Pad...", "Transmitting Payload...", "Updating KM: Key Consumed"], 2: ["Connecting to Database...", "Initiating QKD Handshake...", "Generating AES Session Key...", "Encrypting with Quantum AES...", "Transmission Complete"], 3: ["Generating PQC Key Pair...", "Connecting to Backend...", "Encrypting with Lattice Algorithm...", "Signing Transmission...", "Payload Sent"], 4: ["Packaging Transmission...", "Sending via Standard TLS..."] }, decrypt: { 1: ["Connecting to Key Manager...", "Fetching One-Time Pad...", "Verifying Key Integrity...", "Decrypting with OTP..."], 2: ["Connecting to KM & DB...", "Verifying QKD Session...", "Fetching AES Session Key...", "Decrypting Payload..."], 3: ["Verifying PQC Signature...", "Connecting to Backend...", "Decrypting with Lattice Keys...", "Reconstructing Message..."] } };
+
+        // --- UTILITY FUNCTIONS ---
+        const typewriter = (element, text, speed = 50) => { let i = 0; element.innerHTML = ""; const type = () => { if (i < text.length) { element.innerHTML += text.charAt(i); i++; setTimeout(type, speed); } }; type(); };
+        const debounce = (func, delay) => { let timeout; return (...args) => { clearTimeout(timeout); timeout = setTimeout(() => func.apply(this, args), delay); }; };
+        const simulateEncryption = (plainText) => Array.from({ length: plainText.length * 1.5 }, () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*'.charAt(Math.floor(Math.random() * 44))).join('');
+        const formatTime = (timestamp) => { const diffMins = Math.floor((new Date() - new Date(timestamp)) / 60000); if (diffMins < 60) return `${diffMins}m ago`; if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`; return new Date(timestamp).toLocaleDateString(); };
+        const formatFileSize = (bytes) => { if (bytes === 0) return '0 Bytes'; const k = 1024; const sizes = ['Bytes', 'KB', 'MB', 'GB']; const i = Math.floor(Math.log(bytes) / Math.log(k)); return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]; };
+        async function initializeServices() { const statusText = document.getElementById('connectionText'); const statusDot = document.getElementById('connectionStatus'); const steps = ["Booting systems...", "Initializing quantum channel...", "Verifying key matrix...", "Network OK."]; for (let i = 0; i < steps.length; i++) { statusText.textContent = steps[i]; await new Promise(res => setTimeout(res, 600)); } statusDot.className = 'status-dot status-connected'; statusText.textContent = 'All services connected'; }
+        
+        // --- AUTHENTICATION & APP INITIALIZATION ---
+        function handleLogin(e) { e.preventDefault(); const email = document.getElementById('email').value.trim(); const password = document.getElementById('password').value.trim(); const errorDiv = document.getElementById('loginError'); if (database.users[email] && database.users[email].password === password) { appState.currentUser = { email, ...database.users[email] }; document.getElementById('loginPage').style.display = 'none'; document.getElementById('appContainer').style.display = 'block'; initializeApp(); } else { errorDiv.textContent = 'Access Denied. Invalid credentials.'; errorDiv.style.display = 'block'; } }
+        function logout() { appState.currentUser = null; document.getElementById('loginPage').style.display = 'flex'; document.getElementById('appContainer').style.display = 'none'; document.getElementById('loginForm').reset(); }
+        function initializeApp() { document.getElementById('userName').textContent = appState.currentUser.name; document.getElementById('userAvatar').textContent = appState.currentUser.avatar; loadEmails(); setupSidebarNavigation(); setupComposeForm(); }
+        
+        // --- UI SETUP ---
+        function setupSidebarNavigation() { document.querySelectorAll('.menu-item:not(.disabled)').forEach(item => { item.addEventListener('click', () => { document.querySelectorAll('.menu-item').forEach(mi => mi.classList.remove('active')); item.classList.add('active'); appState.currentSection = item.getAttribute('data-section'); loadEmails(); }); }); document.getElementById('settingsBtn').addEventListener('click', () => showNotification('Settings module not yet implemented.', 'info')); }
+        function setupComposeForm() {
+            const recipientInput = document.getElementById('recipientEmail'); const securityOptions = document.getElementById('securityOptions'); const emailContent = document.getElementById('emailContent'); const attachmentArea = document.getElementById('attachmentArea'); const fileInput = document.getElementById('fileAttachmentInput');
+            const debouncedRecipientCheck = debounce(() => { const status = document.getElementById('recipientStatus'); if (database.users[recipientInput.value.trim()]) { status.textContent = 'VERIFIED'; status.className = 'recipient-status status-verified'; } else { status.textContent = 'UNVERIFIED'; status.className = 'recipient-status status-unverified'; } }, 300);
+            recipientInput.addEventListener('input', debouncedRecipientCheck);
+            securityOptions.addEventListener('click', (e) => { const selectedOption = e.target.closest('.security-option'); if (!selectedOption) return; securityOptions.querySelectorAll('.security-option').forEach(opt => opt.classList.remove('selected')); selectedOption.classList.add('selected'); appState.selectedSecurityLevel = parseInt(selectedOption.getAttribute('data-level')); checkOtpWarning(); });
+            emailContent.addEventListener('input', checkOtpWarning);
+            attachmentArea.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', handleFileSelection);
+        }
+        
+        // --- EMAIL LISTING & DELETION ---
+        function loadEmails() {
+            const emailList = document.getElementById('emailList');
+            database.emails.sort((a, b) => b.timestamp - a.timestamp);
+            const userEmail = appState.currentUser.email;
+            const inboxEmails = database.emails.filter(e => e.to === userEmail);
+            const sentEmails = database.emails.filter(e => e.from === userEmail);
+            const filteredEmails = appState.currentSection === 'inbox' ? inboxEmails : sentEmails;
+            document.getElementById('inboxCount').textContent = inboxEmails.length;
+            document.getElementById('outboxCount').textContent = sentEmails.length;
+            if (filteredEmails.length === 0) { emailList.innerHTML = `<div style="text-align:center; padding: 60px 20px; color: var(--text-secondary);"><h3>// NO TRANSMISSIONS DETECTED //</h3></div>`; } 
+            else { emailList.innerHTML = filteredEmails.map(email => { const isEncryptedInbox = appState.currentSection === 'inbox' && email.encrypted; const displaySubject = isEncryptedInbox ? '****' : email.subject; const displayPreview = isEncryptedInbox ? '[Encrypted Data]' : email.preview; const unreadIndicator = !email.read && appState.currentSection === 'inbox' ? '<div class="unread-indicator"></div>' : ''; return `<div class="email-item" data-id="${email.id}">${unreadIndicator}<div class="email-header"><span class="sender-info">${appState.currentSection === 'inbox' ? email.from : `To: ${email.to}`}</span><span class="email-time">${formatTime(email.timestamp)}</span></div><div class="email-details"><div class="email-subject">${displaySubject}</div><span class="security-badge level-${email.securityLevel}">${securityLevels[email.securityLevel].name}</span></div><div class="email-preview">${displayPreview}</div><button class="delete-mail-btn" data-id="${email.id}">🗑️</button></div>`; }).join(''); }
+        }
+        function deleteEmail(emailId) { if (confirm('Are you sure you want to permanently delete this transmission?')) { database.emails = database.emails.filter(e => e.id !== emailId); loadEmails(); } }
+
+        // --- COMPOSE MODAL & ATTACHMENTS ---
+        function openCompose() { document.getElementById('composeModal').style.display = 'block'; const form = document.getElementById('composeForm'); form.reset(); const status = document.getElementById('recipientStatus'); status.textContent = 'UNVERIFIED'; status.className = 'recipient-status status-unverified'; document.querySelectorAll('.security-option').forEach(opt => opt.classList.remove('selected')); document.querySelector(`.security-option[data-level="2"]`).classList.add('selected'); appState.selectedSecurityLevel = 2; appState.currentAttachments = []; renderAttachments(); checkOtpWarning(); }
+        function closeCompose() { document.getElementById('composeModal').style.display = 'none'; }
+        function checkOtpWarning() { const emailContent = document.getElementById('emailContent'); const isOtp = appState.selectedSecurityLevel === 1; const isTooLong = emailContent.value.length > 250; emailContent.classList.toggle('otp-warning', isOtp && isTooLong); }
+        function handleFileSelection(event) { for (const file of event.target.files) { if (!appState.currentAttachments.some(f => f.name === file.name)) { appState.currentAttachments.push({ name: file.name, size: file.size }); } } renderAttachments(); event.target.value = null; }
+        function renderAttachments() {
+            const attachmentList = document.getElementById('attachmentList');
+            if (appState.currentAttachments.length === 0) { attachmentList.innerHTML = ''; return; }
+            let totalSize = appState.currentAttachments.reduce((sum, file) => sum + file.size, 0);
+            const filesHTML = appState.currentAttachments.map(file => `<div class="attachment-item" data-name="${file.name}"><span>${file.name} <span class="attachment-info">(${formatFileSize(file.size)})</span></span><button type="button" class="remove-attachment-btn">&times;</button></div>`).join('');
+            const summaryHTML = `<div class="attachment-summary">${appState.currentAttachments.length} file(s) attached (Total: ${formatFileSize(totalSize)})</div>`;
+            attachmentList.innerHTML = filesHTML + summaryHTML;
+        }
+        function removeAttachment(fileName) { appState.currentAttachments = appState.currentAttachments.filter(f => f.name !== fileName); renderAttachments(); }
+
+        // --- SENDING EMAIL ---
+        async function sendEmail() {
+            const recipientEmail = document.getElementById('recipientEmail').value;
+            if (!database.users[recipientEmail]) { showNotification('Recipient not found in secure network.', 'error'); return; }
+            if (appState.currentAttachments.length > 0) { const fileSteps = appState.currentAttachments.map(f => `Encrypting & Uploading ${f.name}...`); await showProgressAnimation(fileSteps, 'Processing Secure Attachments...'); }
+            const steps = progressSteps.encrypt[appState.selectedSecurityLevel] || progressSteps.encrypt[4];
+            await showProgressAnimation(steps, appState.selectedSecurityLevel !== 4 ? 'Encrypting Transmission...' : 'Sending Transmission...');
+            const content = document.getElementById('emailContent').value;
+            const isEncrypted = appState.selectedSecurityLevel !== 4;
+            const email = { id: 'email_' + Date.now(), from: appState.currentUser.email, to: recipientEmail, subject: document.getElementById('emailSubject').value, content, securityLevel: appState.selectedSecurityLevel, timestamp: Date.now(), encrypted: isEncrypted, read: false, encryptedContent: isEncrypted ? simulateEncryption(content) : content, preview: content.substring(0, 80) + '...', attachments: [...appState.currentAttachments] };
+            database.emails.push(email);
+            closeCompose(); loadEmails(); showNotification('Transmission sent.', 'success');
+        }
+
+        // --- VIEWING & DECRYPTING EMAIL ---
+        function viewEmail(emailId) { const email = database.emails.find(e => e.id === emailId); if (!email) return; if (email.to === appState.currentUser.email && !email.read) { email.read = true; loadEmails(); } const viewer = document.getElementById('emailViewer'); if (email.to === appState.currentUser.email && email.encrypted) { showEncryptedEmailView(email, viewer); } else { showPlainEmail(email, viewer); } document.getElementById('viewEmailModal').style.display = 'block'; }
+        function showEncryptedEmailView(email, viewer) { viewer.innerHTML = `<h3>${email.subject}</h3><div style="color: var(--text-secondary); margin-bottom: 20px; font-size: 14px;"><strong>From:</strong> ${email.from}</div><div class="encrypted-content-viewer"><h4>Encrypted Datastream</h4><code id="ciphertext_${email.id}">${email.encryptedContent}</code></div><div class="decrypt-prompt"><label for="privateKeyInput_${email.id}">Private Key Required</label><input type="password" id="privateKeyInput_${email.id}" placeholder="Enter key..."><button class="btn" onclick="handleDecryptionAttempt('${email.id}')">> Decrypt</button><div id="decryptError_${email.id}" style="color: var(--error-text); font-weight: 500; display: none;"></div></div>`; }
+        async function handleDecryptionAttempt(emailId) {
+            const email = database.emails.find(e => e.id === emailId); const enteredKey = document.getElementById(`privateKeyInput_${emailId}`).value; const errorDiv = document.getElementById(`decryptError_${emailId}`);
+            if (enteredKey === appState.currentUser.privateKey) {
+                errorDiv.style.display = 'none';
+                const steps = progressSteps.decrypt[email.securityLevel] || [];
+                if (steps.length > 0) await showProgressAnimation(steps, 'Decrypting Transmission...');
+                const viewer = document.getElementById('emailViewer');
+                showPlainEmail(email, viewer, true);
+            } else { errorDiv.textContent = 'Decryption failed: Invalid key.'; errorDiv.style.display = 'block'; }
+        }
+        async function decryptAnimation(element, plainText, callback) { const chars = '!<>-_\\/[]{}—=+*^?#_'; let frame = 0; const interval = setInterval(() => { element.textContent = plainText.split('').map((char, index) => { if (index < frame) return plainText[index]; return chars[Math.floor(Math.random() * chars.length)]; }).join(''); if (frame >= plainText.length) { clearInterval(interval); if(callback) callback(); } frame+=0.5; }, 30); }
+        function showPlainEmail(email, viewer, withAnimation = false) {
+            let attachmentsHTML = ''; if (email.attachments && email.attachments.length > 0) { attachmentsHTML = `<div style="margin-top: 20px;"><h4>📎 Secure Attachments</h4><div class="attachment-list">${email.attachments.map(file => `<div class="attachment-item"><span>${file.name}</span><span class="attachment-info">${formatFileSize(file.size)}</span></div>`).join('')}</div></div>`; }
+            viewer.innerHTML = `<div style="padding-bottom: 20px; border-bottom: 1px solid var(--border-color);"><div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;"><h3>${email.subject}</h3><span class="security-badge level-${email.securityLevel}">${securityLevels[email.securityLevel].name}</span></div><div style="color: var(--text-secondary); font-size: 14px;"><strong>From:</strong> ${email.from}<br><strong>To:</strong> ${email.to}</div></div><div style="background: var(--secondary-bg); padding: 20px; border-radius: 4px; margin: 20px 0; white-space: pre-wrap; line-height: 1.6;" id="emailBodyContent">${withAnimation ? '' : email.content}</div>${attachmentsHTML}<div class="integrity-check" id="integrityCheck">Verifying signature...</div><div style="font-size: 12px; color: var(--text-secondary); margin-top: 10px;" id="securityDesc">${securityLevels[email.securityLevel].desc}</div>`;
+            const integrityCheck = document.getElementById('integrityCheck');
+            const showFinalIntegrity = () => {
+                integrityCheck.textContent = "[SIGNATURE VERIFIED: OK]"; integrityCheck.classList.add('integrity-ok');
+                if (email.securityLevel === 1) { const destroyedText = document.createElement('div'); destroyedText.className = 'key-destroyed-notice'; destroyedText.textContent = "(Key Destroyed)"; integrityCheck.insertAdjacentElement('afterend', destroyedText); }
+            };
+            if(withAnimation) { const bodyContent = document.getElementById('emailBodyContent'); decryptAnimation(bodyContent, email.content, showFinalIntegrity); }
+            else { integrityCheck.textContent = email.encrypted ? "[SIGNATURE VERIFIED: OK]" : "[STANDARD TRANSMISSION]"; integrityCheck.classList.toggle('integrity-ok', email.encrypted); }
+        }
+        function closeViewEmail() { document.getElementById('viewEmailModal').style.display = 'none'; }
+        
+        // --- NOTIFICATIONS & ANIMATIONS ---
+        async function showProgressAnimation(steps, title) { if (document.querySelector('.progress-overlay')) return; return new Promise((resolve) => { const overlay = document.createElement('div'); overlay.className = 'progress-overlay'; overlay.innerHTML = `<div class="progress-card"><h3>${title}</h3><div id="progressText" class="progress-text"></div><div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div></div>`; document.body.appendChild(overlay); let stepIndex = 0; const interval = setInterval(() => { if (stepIndex < steps.length) { document.getElementById('progressText').textContent = steps[stepIndex]; document.getElementById('progressFill').style.width = ((stepIndex + 1) / steps.length) * 100 + '%'; stepIndex++; } else { clearInterval(interval); setTimeout(() => { document.body.removeChild(overlay); resolve(); }, 500); } }, 800); }); }
+        function showNotification(message, type = 'info') { const notification = document.createElement('div'); const bgColor = type === 'success' ? 'var(--accent-color)' : type === 'error' ? 'var(--error-text)' : '#2196F3'; notification.style.cssText = `position: fixed; top: 20px; right: 20px; z-index: 3000; padding: 15px 20px; border-radius: 4px; color: ${type==='success' ? 'var(--dark-bg)' : 'white'}; font-weight: 500; background: ${bgColor}; box-shadow: 0 0 12px rgba(0,0,0,0.5); transform: translateX(120%); transition: transform 0.3s ease;`; document.body.appendChild(notification); setTimeout(() => notification.style.transform = 'translateX(0)', 10); setTimeout(() => { notification.style.transform = 'translateX(120%)'; setTimeout(() => document.body.removeChild(notification), 300); }, 3000); }
+        
+        // --- GLOBAL EVENT LISTENERS ---
+        window.addEventListener('load', () => {
+            const bg = document.getElementById('quantumSymbolBg');
+            const symbols = ['⊗','Ψ','Σ','ℏ','Φ','λ','Ω'];
+            for(let i=0; i<40; i++){
+                let span = document.createElement('span');
+                span.className = 'quantum-symbol';
+                span.style.left = Math.random()*100+'vw';
+                span.style.top = Math.random()*100+'vh';
+                span.style.fontSize = 12 + Math.random()*24 + 'px';
+                span.style.animationDuration = 10 + Math.random()*15 + 's';
+                span.innerText = symbols[Math.floor(Math.random()*symbols.length)];
+                bg.appendChild(span);
+            }
+
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('composeForm').addEventListener('submit', (e) => { e.preventDefault(); sendEmail(); });
+            document.getElementById('emailList').addEventListener('click', (e) => { 
+                const targetEmail = e.target.closest('.email-item');
+                const deleteButton = e.target.closest('.delete-mail-btn');
+                if (deleteButton) { deleteEmail(deleteButton.dataset.id); } 
+                else if (targetEmail) { viewEmail(targetEmail.dataset.id); } 
+            });
+            document.getElementById('attachmentList').addEventListener('click', (e) => { const removeBtn = e.target.closest('.remove-attachment-btn'); if (removeBtn) { const item = removeBtn.closest('.attachment-item'); removeAttachment(item.dataset.name); } });
+            initializeServices();
+            typewriter(document.getElementById('appSubtitle'), 'Quantum Secure Email Platform');
+            if(database.emails.length === 0) { const sampleContent = 'Agent Alice,\n\nYour mission has been approved. The package is ready for pickup at the designated location.\n\nThis channel is secure.\n\n- B'; database.emails.push({ id: 'sample_email_1', from: 'bob@qumail.in', to: 'alice@qumail.in', subject: 'Mission Directive', content: sampleContent, encryptedContent: simulateEncryption(sampleContent), securityLevel: 1, timestamp: Date.now() - 300000, preview: sampleContent.substring(0,80)+'...', encrypted: true, read: false, attachments: [{name: 'mission_brief.pdf', size: 125829},{name: 'rendezvous_map.jpg', size: 482451}] }); }
+        });
+        window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeCompose(); closeViewEmail(); } if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { if (document.getElementById('composeModal').style.display === 'block') document.getElementById('composeForm').requestSubmit(); } });
+        window.addEventListener('click', (event) => { if (event.target.classList.contains('modal')) event.target.style.display = 'none'; });
+    </script>
+</body>
+</html>
