@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}QuMail - Dashboard{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="QuMail" class="sidebar-logo">
+            <h2>QuMail</h2>
+        </div>
+
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="nav-item active" data-folder="inbox">
+                    <i class="fas fa-inbox"></i>
+                    <span>Inbox</span>
+                    <span class="unread-count" id="inboxCount">0</span>
+                </li>
+                <li class="nav-item" data-folder="outbox">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Sent</span>
+                </li>
+                <!-- Add more navigation items here -->
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <h1>Welcome to QuMail</h1>
+        <!-- Add your dashboard components here -->
+    </div>
+</div>
+{% endblock %}

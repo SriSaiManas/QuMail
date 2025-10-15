@@ -1,0 +1,22 @@
+<!-- Navigation component (if needed for future expansion) -->
+<nav class="navbar">
+    <div class="navbar-brand">
+        <img src="{{ url_for('static', filename='images/logo.png') }}" alt="QuMail" class="navbar-logo">
+        <span class="navbar-title">QuMail</span>
+    </div>
+
+    <div class="navbar-menu">
+        <div class="navbar-item">
+            <span class="user-name">{{ current_user.full_name if current_user.is_authenticated else 'Guest' }}</span>
+        </div>
+
+        {% if current_user.is_authenticated %}
+        <div class="navbar-item">
+            <button class="btn-logout" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</nav>
